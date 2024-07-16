@@ -49,7 +49,7 @@ func SetupDatabase() {
 		log.Fatal(err)
 	}
 
-	// Insert each customer into the database
+	// Insert each applicants into the database
 	for _, loan_applicant := range loan_applicant {
 		pk := InsertLoanApplicant(db, loan_applicant)
 		fmt.Printf("Inserted loan applicant ID = %d\n", pk)
@@ -152,7 +152,7 @@ func GetApplicantByID(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	// Get customer_id from URL parameters
+	// Get Loan_applicants from URL parameters
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
@@ -160,7 +160,7 @@ func GetApplicantByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Query database for customer with given applicant_id
+	// Query database for Loan_applicants with given applicant_id
 	var loanApplicant Loan_applicants
 	query := `SELECT applicant_id, first_name, last_name, address, phone, email, applicant_status, created_at, updated_at FROM loan_applicants WHERE applicant_id = $1`
 	err = db.QueryRow(query, id).Scan(&loanApplicant.Applicant_id, &loanApplicant.First_name, &loanApplicant.Last_name, &loanApplicant.Address, &loanApplicant.Phone, &loanApplicant.Email, &loanApplicant.Applicant_Status, &loanApplicant.Created_at, &loanApplicant.Updated_at)
@@ -192,7 +192,7 @@ func CreateApplicants(w http.ResponseWriter, r *http.Request) {
 	}
 	defer db.Close()
 
-	// Decode JSON request body into a Customer struct
+	// Decode JSON request body into a Loan_applicants struct
 	var newApplicant Loan_applicants
 	err = json.NewDecoder(r.Body).Decode(&newApplicant)
 	if err != nil {
@@ -231,5 +231,111 @@ func CreateApplicants(w http.ResponseWriter, r *http.Request) {
 	// Set Content-Type and return JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // HTTP 201 Created
+	json.NewEncoder(w).Encode(successMessage)
+}
+
+func UpdateApplicants(w http.ResponseWriter, r *http.Request) {
+	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Get applicant_id from URL parameters
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid Applicants ID", http.StatusBadRequest)
+		return
+	}
+
+	// Decode JSON request body into a Loan_applicants struct
+	var updateApplicant Loan_applicants
+	err = json.NewDecoder(r.Body).Decode(&updateApplicant)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate applicant_status
+	if updateApplicant.Applicant_Status != "newBorrower" && updateApplicant.Applicant_Status != "currentBorrower" {
+		// Return JSON error response if applicant_status is invalid
+		errorResponse := map[string]string{"error": "Invalid applicant status. Allowed values are 'newBorrower' or 'currentBorrower'"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Update query
+	query := `UPDATE loan_applicants SET first_name = $2, last_name = $3, address = $4, phone = $5, email = $6, applicant_status = $7 WHERE applicant_id = $1`
+	result, err := db.Exec(query, id, updateApplicant.First_name, updateApplicant.Last_name, updateApplicant.Address, updateApplicant.Phone, updateApplicant.Email, updateApplicant.Applicant_Status)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		// Return JSON error response if no applicant with the given ID was found to update
+		errorResponse := map[string]string{"error": "Applicant ID not found or no update performed"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Return success message
+	w.WriteHeader(http.StatusOK)
+	successMessage := map[string]string{"message": fmt.Sprintf("Applicant with ID %d updated successfully", id)}
+	json.NewEncoder(w).Encode(successMessage)
+}
+
+func DeleteApplicants(w http.ResponseWriter, r *http.Request) {
+	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
+
+	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Get applicant_id from URL parameters
+	vars := mux.Vars(r)
+	idStr := vars["id"]
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		http.Error(w, "Invalid applicant ID", http.StatusBadRequest)
+		return
+	}
+
+	// Delete query
+	query := `DELETE FROM loan_applicants WHERE applicant_id = $1`
+	result, err := db.Exec(query, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		// Return JSON error response if no customer with the given ID was found to delete
+		errorResponse := map[string]string{"error": "Applicant ID not found or no delete performed"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Return success message
+	w.WriteHeader(http.StatusOK)
+	successMessage := map[string]string{"message": fmt.Sprintf("Applicant with ID %d deleted successfully", id)}
 	json.NewEncoder(w).Encode(successMessage)
 }
