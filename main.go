@@ -16,7 +16,9 @@ func main() {
 	router := mux.NewRouter()
 
 	// Define API endpoints
-	router.HandleFunc("/applicants/all", Loan_Applicants.GetApplicants).Methods("GET")
+	router.HandleFunc("/loan_applicants/all", Loan_Applicants.GetApplicants).Methods("GET")
+	router.HandleFunc("/loan_applicants/{id}", Loan_Applicants.GetApplicantByID).Methods("GET")
+	router.HandleFunc("/loan_applicants/create", Loan_Applicants.CreateApplicants).Methods("POST")
 
 	// Start server
 	fmt.Println("Server listening on port 8080...")
