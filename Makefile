@@ -1,13 +1,15 @@
-# Start Services
-service:
-	docker pull postgres
-	docker run --name pg-container -e POSTGRES_PASSWORD=secret -p 5432:5432 -d postgres
+# Start Services Applicant
+serviceApplicant:
+	docker pull supachott/postgres
+	docker run --name LMS_Container -e POSTGRES_USER=Admin -e POSTGRES_PASSWORD=Password -p 5432:5432 -d supachott/postgres
 
 openDB:
-	docker exec -ti pg-container createdb -U postgres gopgtest
-	docker exec -ti pg-container psql -U postgres
+	docker exec -ti LMS_Container createdb -U Admin LMS_LoanApplicantsDB
+	docker exec -ti LMS_Container psql -U Admin
 
 clean:
-	docker stop pg-container
-	docker rm pg-container
+	docker stop LMS_Container
+	docker rm LMS_Container
+
+rmImage:
 	docker rmi postgres:latest
