@@ -1,5 +1,5 @@
 # Start server postgres
-serviceApplicant:
+service:
 	docker pull supachott/postgres
 	docker run --name LMS_Container -e POSTGRES_USER=Admin -e POSTGRES_PASSWORD=Password -p 5432:5432 -d supachott/postgres
 
