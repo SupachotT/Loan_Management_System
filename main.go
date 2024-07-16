@@ -19,6 +19,8 @@ func main() {
 	router.HandleFunc("/loan_applicants/all", Loan_Applicants.GetApplicants).Methods("GET")
 	router.HandleFunc("/loan_applicants/{id}", Loan_Applicants.GetApplicantByID).Methods("GET")
 	router.HandleFunc("/loan_applicants/create", Loan_Applicants.CreateApplicants).Methods("POST")
+	router.HandleFunc("/loan_applicants/update/{id}", Loan_Applicants.UpdateApplicants).Methods("PUT")
+	router.HandleFunc("/loan_applicants/delete/{id}", Loan_Applicants.DeleteApplicants).Methods("DELETE")
 
 	// Start server
 	fmt.Println("Server listening on port 8080...")
