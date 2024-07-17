@@ -100,8 +100,6 @@ func SetupDatabase() {
 	}
 	defer db.Close()
 
-	log.Println("Connected to the database successfully")
-
 	// Create the loan_submits table if it doesn't exist
 	if err := createLoanSubmitTable(db); err != nil {
 		log.Fatal("Error creating loan_submits table:", err)
@@ -312,5 +310,70 @@ func CreateLoanSubmit(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // HTTP 201 Created
 	json.NewEncoder(w).Encode(successMessage)
+}
 
+func UpdateLoanSubmit(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanSubmitDB()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Extract loanSubmit_id from request parameters
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid Loan Submit ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse JSON request body
+	var updateloanSubmit LoanSubmit
+	err = json.NewDecoder(r.Body).Decode(&updateloanSubmit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate applicant_status
+	if updateloanSubmit.LoanStatus != "ongoing" && updateloanSubmit.LoanStatus != "completed" {
+		// Return JSON error response if applicant_status is invalid
+		errorResponse := map[string]string{"error": "Invalid Loan Submit status. Allowed values are 'ongoing' or 'completed'"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Update query
+	query := `UPDATE loan_submits 
+			  SET applicant_id = $1, loan_amount = $2, interest_rate = $3, loan_date = $4, due_date = $5, loan_status = $6, updated_at = CURRENT_TIMESTAMP
+              WHERE loanSubmit_id = $7`
+
+	// Format time.Time to PostgreSQL DATE format
+	loanDate := updateloanSubmit.LoanDate.Format("2006-01-02")
+	dueDate := updateloanSubmit.DueDate.Format("2006-01-02")
+
+	result, err := db.Exec(query, updateloanSubmit.ApplicantID, updateloanSubmit.LoanAmount, updateloanSubmit.InterestRate, loanDate, dueDate, updateloanSubmit.LoanStatus, updateloanSubmit.LoanSubmitID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		// Return JSON error response if no applicant with the given ID was found to update
+		errorResponse := map[string]string{"error": "Loan Submit ID not found or no update performed"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Return success message
+	w.WriteHeader(http.StatusOK)
+	successMessage := map[string]string{"message": fmt.Sprintf("Loan submission with ID %d updated successfully", id)}
+	json.NewEncoder(w).Encode(successMessage)
 }
