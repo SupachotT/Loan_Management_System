@@ -43,10 +43,9 @@ func SetupDatabase() {
 	if err != nil {
 		log.Fatal("Error connecting to the database:", err)
 	}
-	if err = db.Ping(); err != nil {
-		log.Fatal("Error pinging the database:", err)
-	}
 	defer db.Close()
+
+	log.Println("Connected to the database successfully")
 
 	createLoanApplicantTable(db)
 
