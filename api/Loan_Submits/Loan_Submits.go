@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/gorilla/mux"
 )
 
 // ----------------------------- solve problem cannot insert data from file json into database -----------------------------
@@ -217,4 +219,69 @@ func TestReadSubmitFromFile() {
 		fmt.Printf("ApplicantID: %d, LoanAmount: %.2f, InterestRate: %.2f, LoanDate: %s, DueDate: %s, LoanStatus: %s\n",
 			submit.ApplicantID, submit.LoanAmount, submit.InterestRate, submit.LoanDate.Format("2006-01-02"), submit.DueDate.Format("2006-01-02"), submit.LoanStatus)
 	}
+}
+
+func GetLoanSubmitByID(w http.ResponseWriter, r *http.Request) {
+	// Extract loanSubmit_id from request parameters
+	params := mux.Vars(r)
+	loanSubmitID := params["id"]
+
+	db, err := connectLoanSubmitDB()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error connecting to the database: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Query the loan submission by ID
+	row := db.QueryRow("SELECT loanSubmit_id, applicant_id, loan_amount, interest_rate, loan_date, due_date, loan_status, created_at, updated_at FROM loan_submits WHERE loanSubmit_id = $1", loanSubmitID)
+
+	var loanSubmit LoanSubmit
+	err = row.Scan(&loanSubmit.LoanSubmitID, &loanSubmit.ApplicantID, &loanSubmit.LoanAmount, &loanSubmit.InterestRate,
+		&loanSubmit.LoanDate, &loanSubmit.DueDate, &loanSubmit.LoanStatus, &loanSubmit.CreatedAt, &loanSubmit.UpdatedAt)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error retrieving loan submission: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loanSubmit)
+}
+
+func AddLoanSubmit(w http.ResponseWriter, r *http.Request) {
+	// Parse JSON request body
+	var loanSubmit LoanSubmit
+	err := json.NewDecoder(r.Body).Decode(&loanSubmit)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
+		return
+	}
+
+	db, err := connectLoanSubmitDB()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error connecting to the database: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Insert loan submission into the database
+	query := `INSERT INTO loan_submits (applicant_id, loan_amount, interest_rate, loan_date, due_date, loan_status)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING loanSubmit_id`
+
+	var loanSubmitID int
+	// Format time.Time to PostgreSQL DATE format
+	loanDate := loanSubmit.LoanDate.Format("2006-01-02")
+	dueDate := loanSubmit.DueDate.Format("2006-01-02")
+
+	err = db.QueryRow(query, loanSubmit.ApplicantID, loanSubmit.LoanAmount, loanSubmit.InterestRate, loanDate, dueDate, loanSubmit.LoanStatus).Scan(&loanSubmitID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error inserting loan submission: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	// Return success response with inserted loanSubmitID
+	response := map[string]int{"loanSubmitID": loanSubmitID}
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }

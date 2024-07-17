@@ -35,5 +35,6 @@ func handleRoutes(router *mux.Router) {
 	// Define API endpoints for Loan Submits
 	submitsRouter := router.PathPrefix("/loan_submits").Subrouter()
 	submitsRouter.HandleFunc("/all", Loan_Submits.GetLoanSubmit).Methods("GET")
+	submitsRouter.HandleFunc("/{id}", Loan_Submits.GetLoanSubmitByID).Methods("GET")
+	submitsRouter.HandleFunc("/create", Loan_Submits.AddLoanSubmit).Methods("POST")
 }
-
