@@ -25,7 +25,7 @@ type Loan_applicants struct {
 	Updated_at       string
 }
 
-func connectDB() (*sql.DB, error) {
+func connectLMS_LoanApplicantsDB() (*sql.DB, error) {
 	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -39,7 +39,7 @@ func connectDB() (*sql.DB, error) {
 }
 
 func SetupDatabase() {
-	db, err := connectDB()
+	db, err := connectLMS_LoanApplicantsDB()
 	if err != nil {
 		log.Fatal("Error connecting to the database:", err)
 	}
@@ -110,7 +110,7 @@ func readCustomersFromFile(filename string) ([]Loan_applicants, error) {
 }
 
 func GetApplicants(w http.ResponseWriter, r *http.Request) {
-	db, err := connectDB()
+	db, err := connectLMS_LoanApplicantsDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -145,7 +145,7 @@ func GetApplicants(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetApplicantByID(w http.ResponseWriter, r *http.Request) {
-	db, err := connectDB()
+	db, err := connectLMS_LoanApplicantsDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -182,7 +182,7 @@ func GetApplicantByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateApplicants(w http.ResponseWriter, r *http.Request) {
-	db, err := connectDB()
+	db, err := connectLMS_LoanApplicantsDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -232,7 +232,7 @@ func CreateApplicants(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateApplicants(w http.ResponseWriter, r *http.Request) {
-	db, err := connectDB()
+	db, err := connectLMS_LoanApplicantsDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -292,7 +292,7 @@ func UpdateApplicants(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteApplicants(w http.ResponseWriter, r *http.Request) {
-	db, err := connectDB()
+	db, err := connectLMS_LoanApplicantsDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
