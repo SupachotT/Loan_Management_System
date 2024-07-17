@@ -118,7 +118,6 @@ func SetupDatabase() {
 		pk := InsertLoanSubmit(db, loanApplicant)
 		fmt.Printf("Inserted loan submit ID = %d\n", pk)
 	}
-
 }
 
 func createLoanSubmitTable(db *sql.DB) error {
@@ -260,21 +259,21 @@ func GetLoanSubmitByID(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(loanSubmit)
 }
 
-func AddLoanSubmit(w http.ResponseWriter, r *http.Request) {
-	// Parse JSON request body
-	var loanSubmit LoanSubmit
-	err := json.NewDecoder(r.Body).Decode(&loanSubmit)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Error decoding JSON: %v", err), http.StatusBadRequest)
-		return
-	}
-
+func CreateLoanSubmit(w http.ResponseWriter, r *http.Request) {
 	db, err := connectLoanSubmitDB()
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error connecting to the database: %v", err), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
+
+	// Parse JSON request body
+	var loanSubmit LoanSubmit
+	err = json.NewDecoder(r.Body).Decode(&loanSubmit)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
 	// Insert loan submission into the database
 	query := `INSERT INTO loan_submits (applicant_id, loan_amount, interest_rate, loan_date, due_date, loan_status)
@@ -287,12 +286,31 @@ func AddLoanSubmit(w http.ResponseWriter, r *http.Request) {
 
 	err = db.QueryRow(query, loanSubmit.ApplicantID, loanSubmit.LoanAmount, loanSubmit.InterestRate, loanDate, dueDate, loanSubmit.LoanStatus).Scan(&loanSubmitID)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error inserting loan submission: %v", err), http.StatusInternalServerError)
+		if loanSubmit.LoanStatus != "ongoing" && loanSubmit.LoanStatus != "completed" {
+			// If loan status is invalid, return a specific JSON response
+			errorMessage := map[string]string{
+				"error": fmt.Sprintf("Invalid loan status: '%s'. Allowed values are 'ongoing' or 'completed'.", loanSubmit.LoanStatus),
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest) // HTTP 400 Bad Request
+			json.NewEncoder(w).Encode(errorMessage)
+			return
+		}
+
+		// For other errors, return a generic internal server error
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Return success response with inserted loanSubmitID
-	response := map[string]int{"loanSubmitID": loanSubmitID}
+	// Prepare success message
+	successMessage := map[string]interface{}{
+		"message":       "Loan submission information has been successfully created.",
+		"loanSubmit_id": loanSubmitID,
+	}
+
+	// Set Content-Type and return JSON response
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(response)
+	w.WriteHeader(http.StatusCreated) // HTTP 201 Created
+	json.NewEncoder(w).Encode(successMessage)
+
 }
