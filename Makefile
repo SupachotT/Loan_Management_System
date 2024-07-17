@@ -5,6 +5,7 @@ service:
 
 openDB:
 	docker exec -ti LMS_Container createdb -U Admin LMS_LoanApplicantsDB
+	docker exec -ti LMS_Container createdb -U Admin LMS_LoanSubmitDB
 	docker exec -ti LMS_Container psql -U Admin
 
 clean:
