@@ -221,7 +221,7 @@ func CreateApplicants(w http.ResponseWriter, r *http.Request) {
 
 	// Prepare success message
 	successMessage := map[string]interface{}{
-		"message":     "Customer created successfully",
+		"message":     "Customer information has been successfully created.",
 		"customer_id": newApplicantID,
 	}
 
