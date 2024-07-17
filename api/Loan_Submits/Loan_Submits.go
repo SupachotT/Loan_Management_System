@@ -2,6 +2,7 @@ package Loan_Submits
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,7 +20,6 @@ type CustomDate struct {
 const customDateFormat = "2006-01-02"
 
 func (cd *CustomDate) UnmarshalJSON(b []byte) error {
-	// Remove the quotes around the date string
 	dateString := string(b)
 	if dateString == `null` {
 		*cd = CustomDate{time.Time{}}
@@ -27,13 +27,40 @@ func (cd *CustomDate) UnmarshalJSON(b []byte) error {
 	}
 	dateString = dateString[1 : len(dateString)-1]
 
-	// Parse the date
 	t, err := time.Parse(customDateFormat, dateString)
 	if err != nil {
 		return err
 	}
 	cd.Time = t
 	return nil
+}
+
+// Scan implements the sql.Scanner interface.
+func (cd *CustomDate) Scan(value interface{}) error {
+	if value == nil {
+		*cd = CustomDate{Time: time.Time{}}
+		return nil
+	}
+
+	switch v := value.(type) {
+	case time.Time:
+		*cd = CustomDate{Time: v}
+		return nil
+	case string:
+		t, err := time.Parse(customDateFormat, v)
+		if err != nil {
+			return err
+		}
+		*cd = CustomDate{Time: t}
+		return nil
+	default:
+		return fmt.Errorf("unsupported Scan, storing driver.Value type %T into type %T", value, cd)
+	}
+}
+
+// Value implements the driver.Valuer interface.
+func (cd CustomDate) Value() (driver.Value, error) {
+	return cd.Time.Format(customDateFormat), nil
 }
 
 //----------------------------- end for solve problem cannot insert data from file json into database -----------------------------
