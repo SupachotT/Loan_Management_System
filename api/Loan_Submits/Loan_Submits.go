@@ -81,7 +81,7 @@ type LoanSubmit struct {
 }
 
 func connectLoanSubmitDB() (*sql.DB, error) {
-	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanSubmitDB?sslmode=disable"
+	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanSubmitsDB?sslmode=disable"
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to the database: %v", err)
