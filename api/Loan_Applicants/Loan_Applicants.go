@@ -45,9 +45,10 @@ func SetupDatabase() {
 	}
 	defer db.Close()
 
-	log.Println("Connected to the database successfully")
-
-	createLoanApplicantTable(db)
+	// Create the loan_submits table if it doesn't exist
+	if err := createLoanApplicantTable(db); err != nil {
+		log.Fatal("Error creating loan_submits table:", err)
+	}
 
 	// Read data from JSON file
 	loan_applicant, err := readCustomersFromFile("api/Loan_Applicants/json/Applicants.json")
@@ -62,7 +63,7 @@ func SetupDatabase() {
 	}
 }
 
-func createLoanApplicantTable(db *sql.DB) {
+func createLoanApplicantTable(db *sql.DB) error {
 	query := `CREATE TABLE IF NOT EXISTS loan_applicants (
 		applicant_id SERIAL PRIMARY KEY,
 		first_name VARCHAR(50) NOT NULL,
@@ -77,8 +78,9 @@ func createLoanApplicantTable(db *sql.DB) {
 
 	_, err := db.Exec(query)
 	if err != nil {
-		log.Fatal(err)
+		return fmt.Errorf("error creating loan_applicants table: %v", err)
 	}
+	return nil
 }
 
 func InsertLoanApplicant(db *sql.DB, applicant Loan_applicants) int {
