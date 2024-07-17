@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -222,25 +223,35 @@ func TestReadSubmitFromFile() {
 }
 
 func GetLoanSubmitByID(w http.ResponseWriter, r *http.Request) {
-	// Extract loanSubmit_id from request parameters
-	params := mux.Vars(r)
-	loanSubmitID := params["id"]
-
 	db, err := connectLoanSubmitDB()
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error connecting to the database: %v", err), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer db.Close()
 
-	// Query the loan submission by ID
-	row := db.QueryRow("SELECT loanSubmit_id, applicant_id, loan_amount, interest_rate, loan_date, due_date, loan_status, created_at, updated_at FROM loan_submits WHERE loanSubmit_id = $1", loanSubmitID)
-
-	var loanSubmit LoanSubmit
-	err = row.Scan(&loanSubmit.LoanSubmitID, &loanSubmit.ApplicantID, &loanSubmit.LoanAmount, &loanSubmit.InterestRate,
-		&loanSubmit.LoanDate, &loanSubmit.DueDate, &loanSubmit.LoanStatus, &loanSubmit.CreatedAt, &loanSubmit.UpdatedAt)
+	// Extract loanSubmit_id from request parameters
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error retrieving loan submission: %v", err), http.StatusInternalServerError)
+		http.Error(w, "Invalid Loan Submit ID", http.StatusBadRequest)
+		return
+	}
+
+	// Query database for loan_submits with given loanSubmit_id
+	var loanSubmit LoanSubmit
+	query := `SELECT loanSubmit_id, applicant_id, loan_amount, interest_rate, loan_date, due_date, loan_status, created_at, updated_at FROM loan_submits WHERE loanSubmit_id = $1`
+	err = db.QueryRow(query, id).Scan(&loanSubmit.LoanSubmitID, &loanSubmit.ApplicantID, &loanSubmit.LoanAmount, &loanSubmit.InterestRate,
+		&loanSubmit.LoanDate, &loanSubmit.DueDate, &loanSubmit.LoanStatus, &loanSubmit.CreatedAt, &loanSubmit.UpdatedAt)
+	if err == sql.ErrNoRows {
+		// Return JSON error response if no customer with the given ID exists
+		errorResponse := map[string]string{"error": "loan_submits data not found"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
