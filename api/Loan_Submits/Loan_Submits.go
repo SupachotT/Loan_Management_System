@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/shopspring/decimal"
 )
 
 // ----------------------------- solve problem cannot insert data from file json into database -----------------------------
@@ -71,8 +72,8 @@ func (cd CustomDate) Value() (driver.Value, error) {
 type LoanSubmit struct {
 	LoanSubmitID int
 	ApplicantID  int
-	LoanAmount   float64
-	InterestRate float64
+	LoanAmount   decimal.Decimal
+	InterestRate decimal.Decimal
 	LoanDate     CustomDate // Use CustomDate
 	DueDate      CustomDate // Use CustomDate
 	LoanStatus   string
@@ -203,20 +204,6 @@ func GetLoanSubmit(w http.ResponseWriter, r *http.Request) {
 	// Return JSON response
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(loan_Submits)
-}
-
-func TestReadSubmitFromFile() {
-	filename := "api/Loan_Submits/json/SubmittedApp.json"
-	loanSubmits, err := readSubmitFromFile(filename)
-	if err != nil {
-		log.Fatalf("Error reading file %s: %v", filename, err)
-	}
-
-	fmt.Printf("Successfully read %d loan submissions:\n", len(loanSubmits))
-	for _, submit := range loanSubmits {
-		fmt.Printf("ApplicantID: %d, LoanAmount: %.2f, InterestRate: %.2f, LoanDate: %s, DueDate: %s, LoanStatus: %s\n",
-			submit.ApplicantID, submit.LoanAmount, submit.InterestRate, submit.LoanDate.Format("2006-01-02"), submit.DueDate.Format("2006-01-02"), submit.LoanStatus)
-	}
 }
 
 func GetLoanSubmitByID(w http.ResponseWriter, r *http.Request) {
