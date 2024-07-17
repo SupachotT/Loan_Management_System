@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/SupachotT/Loan_Management_System.git/api/Loan_Applicants"
+	"github.com/SupachotT/Loan_Management_System.git/api/Loan_Payments"
 	"github.com/SupachotT/Loan_Management_System.git/api/Loan_Submits"
 	"github.com/gorilla/mux"
 )
@@ -13,7 +14,7 @@ func main() {
 	// Call the function from the imported package
 	Loan_Applicants.SetupDatabase()
 	Loan_Submits.SetupDatabase()
-	// Loan_Submits.TestReadSubmitFromFile()
+	Loan_Payments.SetupDatabase()
 
 	// Start server
 	router := mux.NewRouter()
