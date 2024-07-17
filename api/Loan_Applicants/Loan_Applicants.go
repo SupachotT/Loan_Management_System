@@ -25,20 +25,27 @@ type Loan_applicants struct {
 	Updated_at       string
 }
 
-func SetupDatabase() {
-	// create variable for connect to postgres name LMS_LoanApplicantsDB
+func connectDB() (*sql.DB, error) {
 	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
-
 	db, err := sql.Open("postgres", connStr)
+	if err != nil {
+		return nil, fmt.Errorf("error connecting to the database: %v", err)
+	}
+	if err = db.Ping(); err != nil {
+		db.Close()
+		return nil, fmt.Errorf("error pinging the database: %v", err)
+	}
+	return db, nil
+}
 
+func SetupDatabase() {
+	db, err := connectDB()
 	if err != nil {
 		log.Fatal("Error connecting to the database:", err)
 	}
-
 	if err = db.Ping(); err != nil {
 		log.Fatal("Error pinging the database:", err)
 	}
-
 	defer db.Close()
 
 	createLoanApplicantTable(db)
@@ -90,24 +97,21 @@ func InsertLoanApplicant(db *sql.DB, applicant Loan_applicants) int {
 func readCustomersFromFile(filename string) ([]Loan_applicants, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error opening file: %v", err)
 	}
 	defer file.Close()
 
 	var applicant []Loan_applicants
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&applicant); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error decoding JSON: %v", err)
 	}
 
 	return applicant, nil
 }
 
 func GetApplicants(w http.ResponseWriter, r *http.Request) {
-	// Connect to the database
-	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
-
-	db, err := sql.Open("postgres", connStr)
+	db, err := connectDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -142,10 +146,7 @@ func GetApplicants(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetApplicantByID(w http.ResponseWriter, r *http.Request) {
-	// Connect to the database
-	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
-
-	db, err := sql.Open("postgres", connStr)
+	db, err := connectDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -182,10 +183,7 @@ func GetApplicantByID(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateApplicants(w http.ResponseWriter, r *http.Request) {
-	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
-
-	// Connect to PostgreSQL
-	db, err := sql.Open("postgres", connStr)
+	db, err := connectDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -235,9 +233,7 @@ func CreateApplicants(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateApplicants(w http.ResponseWriter, r *http.Request) {
-	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
-
-	db, err := sql.Open("postgres", connStr)
+	db, err := connectDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -297,9 +293,7 @@ func UpdateApplicants(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteApplicants(w http.ResponseWriter, r *http.Request) {
-	connStr := "postgres://Admin:Password@localhost:5432/LMS_LoanApplicantsDB?sslmode=disable"
-
-	db, err := sql.Open("postgres", connStr)
+	db, err := connectDB()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
