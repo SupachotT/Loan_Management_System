@@ -38,4 +38,5 @@ func handleRoutes(router *mux.Router) {
 	submitsRouter.HandleFunc("/{id}", Loan_Submits.GetLoanSubmitByID).Methods("GET")
 	submitsRouter.HandleFunc("/create", Loan_Submits.CreateLoanSubmit).Methods("POST")
 	submitsRouter.HandleFunc("/update/{id}", Loan_Submits.UpdateLoanSubmit).Methods("PUT")
+	submitsRouter.HandleFunc("/delete/{id}", Loan_Submits.DeleteLoanSubmit).Methods("DELETE")
 }

@@ -336,7 +336,7 @@ func UpdateLoanSubmit(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate applicant_status
+	// Validate LoanStatus
 	if updateloanSubmit.LoanStatus != "ongoing" && updateloanSubmit.LoanStatus != "completed" {
 		// Return JSON error response if applicant_status is invalid
 		errorResponse := map[string]string{"error": "Invalid Loan Submit status. Allowed values are 'ongoing' or 'completed'"}
@@ -364,7 +364,7 @@ func UpdateLoanSubmit(w http.ResponseWriter, r *http.Request) {
 	// Check if any rows were affected
 	rowsAffected, _ := result.RowsAffected()
 	if rowsAffected == 0 {
-		// Return JSON error response if no applicant with the given ID was found to update
+		// Return JSON error response if no Loan Submit with the given ID was found to update
 		errorResponse := map[string]string{"error": "Loan Submit ID not found or no update performed"}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
@@ -375,5 +375,46 @@ func UpdateLoanSubmit(w http.ResponseWriter, r *http.Request) {
 	// Return success message
 	w.WriteHeader(http.StatusOK)
 	successMessage := map[string]string{"message": fmt.Sprintf("Loan submission with ID %d updated successfully", id)}
+	json.NewEncoder(w).Encode(successMessage)
+}
+
+func DeleteLoanSubmit(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanSubmitDB()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Extract loanSubmit_id from request parameters
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid Loan Submit ID", http.StatusBadRequest)
+		return
+	}
+
+	// Delete query
+	query := `DELETE FROM loan_submits WHERE loanSubmit_id = $1`
+	result, err := db.Exec(query, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		// Return JSON error response if no Loan Submit ID with the given ID was found to delete
+		errorResponse := map[string]string{"error": "Loan Submit ID not found or no delete performed"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Return success message
+	w.WriteHeader(http.StatusOK)
+	successMessage := map[string]string{"message": fmt.Sprintf("Loan submission with ID %d deleted successfully", id)}
 	json.NewEncoder(w).Encode(successMessage)
 }
