@@ -1,0 +1,42 @@
+[
+    {
+        "ApplicantID": 1,
+        "LoanAmount": 10000.00,
+        "InterestRate": 5.50,
+        "LoanDate": "2024-07-17",
+        "DueDate": "2024-08-17",
+        "LoanStatus": "ongoing"
+    },
+    {
+        "ApplicantID": 2,
+        "LoanAmount": 20000.00,
+        "InterestRate": 5.00,
+        "LoanDate": "2024-07-17",
+        "DueDate": "2024-08-17",
+        "LoanStatus": "ongoing"
+    },
+    {
+        "ApplicantID": 3,
+        "LoanAmount": 17000.00,
+        "InterestRate": 3.50,
+        "LoanDate": "2024-07-17",
+        "DueDate": "2024-08-17",
+        "LoanStatus": "ongoing"
+    },
+    {
+        "ApplicantID": 4,
+        "LoanAmount": 25000.00,
+        "InterestRate": 4.25,
+        "LoanDate": "2024-07-18",
+        "DueDate": "2024-08-18",
+        "LoanStatus": "ongoing"
+    },
+    {
+        "ApplicantID": 5,
+        "LoanAmount": 30000.00,
+        "InterestRate": 5.00,
+        "LoanDate": "2024-07-19",
+        "DueDate": "2024-08-19",
+        "LoanStatus": "ongoing"
+    }
+]
