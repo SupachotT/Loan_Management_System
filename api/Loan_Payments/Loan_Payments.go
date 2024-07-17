@@ -108,7 +108,7 @@ func createLoanPaymentTable(db *sql.DB) error {
 		payment_amount DECIMAL(15, 2) NOT NULL,
 		payment_date DATE NOT NULL,
 		payment_method VARCHAR(50),
-		payment_status VARCHAR(15) NOT NULL CHECK (loan_status IN ('not-complete', 'completed')),
+		payment_status VARCHAR(15) NOT NULL CHECK (payment_status IN ('not-complete', 'completed')),
 		created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 		updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 	)`
