@@ -228,7 +228,7 @@ func GetLoanSubmitByID(w http.ResponseWriter, r *http.Request) {
 	err = db.QueryRow(query, id).Scan(&loanSubmit.LoanSubmitID, &loanSubmit.ApplicantID, &loanSubmit.LoanAmount, &loanSubmit.InterestRate,
 		&loanSubmit.LoanDate, &loanSubmit.DueDate, &loanSubmit.LoanStatus, &loanSubmit.CreatedAt, &loanSubmit.UpdatedAt)
 	if err == sql.ErrNoRows {
-		// Return JSON error response if no customer with the given ID exists
+		// Return JSON error response if no loan submit with the given ID exists
 		errorResponse := map[string]string{"error": "loan_submits data not found"}
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
