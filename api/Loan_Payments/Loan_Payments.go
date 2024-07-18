@@ -3,8 +3,10 @@ package Loan_Payments
 import (
 	"database/sql"
 	"database/sql/driver"
+	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"time"
 
 	"github.com/shopspring/decimal"
@@ -99,6 +101,18 @@ func SetupDatabase() {
 	if err := createLoanPaymentTable(db); err != nil {
 		log.Fatal("Error creating loan_submits table:", err)
 	}
+
+	// Read data from JSON file
+	loanpayments, err := readreceiptFromFile("api/Loan_Payments/json/receipts.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Insert each applicant into the database
+	for _, payments := range loanpayments {
+		pk := InsertLoanSubmit(db, payments)
+		fmt.Printf("Inserted loan payment ID = %d\n", pk)
+	}
 }
 
 func createLoanPaymentTable(db *sql.DB) error {
@@ -118,4 +132,35 @@ func createLoanPaymentTable(db *sql.DB) error {
 		return fmt.Errorf("error creating loan_payments table: %v", err)
 	}
 	return nil
+}
+
+func InsertLoanSubmit(db *sql.DB, payments LoanPayment) int {
+	query := `INSERT INTO loan_payments (loanSubmit_id, payment_amount, payment_date, payment_method, payment_status)
+            VALUES ($1, $2, $3, $4, $5) RETURNING loanPayment_id`
+
+	var PaymentsID int
+	// Format time.Time to PostgreSQL DATE format
+	PaymentDate := payments.PaymentDate.Format("2006-01-02")
+
+	err := db.QueryRow(query, payments.LoanSubmitID, payments.PaymentAmount, PaymentDate, payments.PaymentMethod, payments.PaymentStatus).Scan(&PaymentsID)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return PaymentsID
+}
+
+func readreceiptFromFile(filename string) ([]LoanPayment, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		return nil, fmt.Errorf("error opening file: %v", err)
+	}
+	defer file.Close()
+
+	var LoanPayments []LoanPayment
+	decoder := json.NewDecoder(file)
+	if err := decoder.Decode(&LoanPayments); err != nil {
+		return nil, fmt.Errorf("error decoding JSON: %v", err)
+	}
+
+	return LoanPayments, nil
 }
