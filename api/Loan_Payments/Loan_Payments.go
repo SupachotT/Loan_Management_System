@@ -281,14 +281,124 @@ func CreateLoanPayment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prepare success message
+	// Prepare success message with only the relevant ID
 	successMessage := map[string]interface{}{
 		"message":        "Loan payment information has been successfully created.",
-		"loanPayment_id": loanPayment,
+		"loanPayment_id": loanPaymentID, // Use the ID of the newly created payment
 	}
 
 	// Set Content-Type and return JSON response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated) // HTTP 201 Created
+	json.NewEncoder(w).Encode(successMessage)
+}
+
+func UpdateLoanPayment(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanPaymentsDB()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Extract loanPayment_id from request parameters
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid Loan Payment ID", http.StatusBadRequest)
+		return
+	}
+
+	// Parse JSON request body
+	var updateLoanPayment LoanPayment
+	err = json.NewDecoder(r.Body).Decode(&updateLoanPayment)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Validate PaymentStatus
+	if updateLoanPayment.PaymentStatus != "not-complete" && updateLoanPayment.PaymentStatus != "completed" {
+		// Return JSON error response if payment status is invalid
+		errorResponse := map[string]string{"error": "Invalid Payment Status. Allowed values are 'not-complete' or 'completed'"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Update query
+	query := `UPDATE loan_payments 
+			  SET loanSubmit_id = $1, payment_amount = $2, payment_date = $3, payment_method = $4, payment_status = $5, updated_at = CURRENT_TIMESTAMP
+              WHERE loanPayment_id = $6`
+
+	// Format time.Time to PostgreSQL DATE format
+	paymentDate := updateLoanPayment.PaymentDate.Format("2006-01-02")
+
+	result, err := db.Exec(query, updateLoanPayment.LoanSubmitID, updateLoanPayment.PaymentAmount, paymentDate, updateLoanPayment.PaymentMethod, updateLoanPayment.PaymentStatus, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, _ := result.RowsAffected()
+	if rowsAffected == 0 {
+		// Return JSON error response if no Loan Payment with the given ID was found to update
+		errorResponse := map[string]string{"error": "Loan Payment ID not found or no update performed"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Return success message
+	w.WriteHeader(http.StatusOK)
+	successMessage := map[string]string{"message": fmt.Sprintf("Loan payment with ID %d updated successfully", id)}
+	json.NewEncoder(w).Encode(successMessage)
+}
+
+func DeleteLoanPayment(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanPaymentsDB()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Extract loanSubmit_id from request parameters
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid Loan Submit ID", http.StatusBadRequest)
+		return
+	}
+
+	// Delete query
+	query := `DELETE FROM loan_payments WHERE loanPayment_id = $1`
+	result, err := db.Exec(query, id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Check if any rows were affected
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if rowsAffected == 0 {
+		// Return JSON error response if no Loan Payment with the given ID was found to delete
+		errorResponse := map[string]string{"error": "Loan Payment ID not found or no delete performed"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	}
+
+	// Return success message
+	w.WriteHeader(http.StatusOK)
+	successMessage := map[string]string{"message": fmt.Sprintf("Loan payment with ID %d deleted successfully", id)}
 	json.NewEncoder(w).Encode(successMessage)
 }

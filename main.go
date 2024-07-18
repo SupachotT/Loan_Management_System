@@ -40,4 +40,12 @@ func handleRoutes(router *mux.Router) {
 	submitsRouter.HandleFunc("/create", Loan_Submits.CreateLoanSubmit).Methods("POST")
 	submitsRouter.HandleFunc("/update/{id}", Loan_Submits.UpdateLoanSubmit).Methods("PUT")
 	submitsRouter.HandleFunc("/delete/{id}", Loan_Submits.DeleteLoanSubmit).Methods("DELETE")
+
+	// Define API endpoints for Loan Payments
+	paymentsRouter := router.PathPrefix("/loan_payments").Subrouter()
+	paymentsRouter.HandleFunc("/all", Loan_Payments.GetLoanPayment).Methods("GET")
+	paymentsRouter.HandleFunc("/{id}", Loan_Payments.GetLoanPaymentByID).Methods("GET")
+	paymentsRouter.HandleFunc("/create", Loan_Payments.CreateLoanPayment).Methods("POST")
+	paymentsRouter.HandleFunc("/update/{id}", Loan_Payments.UpdateLoanPayment).Methods("PUT")
+	paymentsRouter.HandleFunc("/delete/{id}", Loan_Payments.DeleteLoanPayment).Methods("DELETE")
 }
