@@ -113,8 +113,8 @@ func SetupDatabase() {
 	}
 
 	// Insert each applicant into the database
-	for _, loanApplicant := range loanSubmits {
-		pk := InsertLoanSubmit(db, loanApplicant)
+	for _, Submit := range loanSubmits {
+		pk := InsertLoanSubmit(db, Submit)
 		fmt.Printf("Inserted loan submit ID = %d\n", pk)
 	}
 }
