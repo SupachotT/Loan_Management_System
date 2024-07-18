@@ -6,9 +6,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/shopspring/decimal"
 )
 
@@ -163,4 +166,129 @@ func readreceiptFromFile(filename string) ([]LoanPayment, error) {
 	}
 
 	return LoanPayments, nil
+}
+
+func GetLoanPayment(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanPaymentsDB()
+	if err != nil {
+		log.Fatal("Error connecting to the database:", err)
+	}
+	defer db.Close()
+
+	// Query from the loan_payments table
+	rows, err := db.Query("SELECT loanPayment_id, loanSubmit_id, payment_amount, payment_date, payment_method, payment_status, created_at, updated_at FROM loan_payments")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer rows.Close()
+
+	var loanPayments []LoanPayment
+	for rows.Next() {
+		var payment LoanPayment
+		if err := rows.Scan(&payment.LoanPaymentID, &payment.LoanSubmitID, &payment.PaymentAmount, &payment.PaymentDate, &payment.PaymentMethod, &payment.PaymentStatus, &payment.CreatedAt, &payment.UpdatedAt); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		loanPayments = append(loanPayments, payment)
+	}
+	if err := rows.Err(); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loanPayments)
+}
+
+func GetLoanPaymentByID(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanPaymentsDB()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Extract loanPayment_id from request parameters
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil {
+		http.Error(w, "Invalid Loan Payment ID", http.StatusBadRequest)
+		return
+	}
+
+	// Query database for loan_payments with given loanPayment_id
+	var loanPayment LoanPayment
+	query := `SELECT loanPayment_id, loanSubmit_id, payment_amount, payment_date, payment_method, payment_status, created_at, updated_at FROM loan_payments WHERE loanPayment_id = $1`
+	err = db.QueryRow(query, id).Scan(&loanPayment.LoanPaymentID, &loanPayment.LoanSubmitID, &loanPayment.PaymentAmount, &loanPayment.PaymentDate, &loanPayment.PaymentMethod, &loanPayment.PaymentStatus, &loanPayment.CreatedAt, &loanPayment.UpdatedAt)
+	if err == sql.ErrNoRows {
+		// Return JSON error response if no loan payment with the given ID exists
+		errorResponse := map[string]string{"error": "loan_payments data not found"}
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotFound)
+		json.NewEncoder(w).Encode(errorResponse)
+		return
+	} else if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Return JSON response
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(loanPayment)
+}
+
+func CreateLoanPayment(w http.ResponseWriter, r *http.Request) {
+	db, err := connectLoanPaymentsDB()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error connecting to the database: %v", err), http.StatusInternalServerError)
+		return
+	}
+	defer db.Close()
+
+	// Parse JSON request body
+	var loanPayment LoanPayment
+	err = json.NewDecoder(r.Body).Decode(&loanPayment)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Insert loan payments into the database
+	query := `INSERT INTO loan_payments (loanSubmit_id, payment_amount, payment_date, payment_method, payment_status)
+        VALUES ($1, $2, $3, $4, $5) RETURNING loanPayment_id`
+
+	var loanPaymentID int
+	// Format time.Time to PostgreSQL DATE format
+	paymentDate := loanPayment.PaymentDate.Format("2006-01-02")
+
+	err = db.QueryRow(query, loanPayment.LoanSubmitID, loanPayment.PaymentAmount, paymentDate, loanPayment.PaymentMethod, loanPayment.PaymentStatus).Scan(&loanPaymentID)
+	if err != nil {
+		if loanPayment.PaymentStatus != "not-complete" && loanPayment.PaymentStatus != "completed" {
+			// If payment status is invalid, return a specific JSON response
+			errorMessage := map[string]string{
+				"error": fmt.Sprintf("Invalid payment status: '%s'. Allowed values are 'not-complete' or 'completed'.", loanPayment.PaymentStatus),
+			}
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest) // HTTP 400 Bad Request
+			json.NewEncoder(w).Encode(errorMessage)
+			return
+		}
+
+		// For other errors, return a generic internal server error
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare success message
+	successMessage := map[string]interface{}{
+		"message":        "Loan payment information has been successfully created.",
+		"loanPayment_id": loanPayment,
+	}
+
+	// Set Content-Type and return JSON response
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated) // HTTP 201 Created
+	json.NewEncoder(w).Encode(successMessage)
 }
