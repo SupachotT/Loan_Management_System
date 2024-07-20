@@ -51,7 +51,7 @@ func SetupDatabase() {
 	}
 
 	// Read data from JSON file
-	loan_applicant, err := readCustomersFromFile("api/Loan_Applicants/json/Applicants.json")
+	loan_applicant, err := readCustomersFromFile("json/Applicants.json")
 	if err != nil {
 		log.Fatal(err)
 	}

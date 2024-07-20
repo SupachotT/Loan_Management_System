@@ -106,7 +106,7 @@ func SetupDatabase() {
 	}
 
 	// Read data from JSON file
-	loanpayments, err := readreceiptFromFile("api/Loan_Payments/json/receipts.json")
+	loanpayments, err := readreceiptFromFile("json/receipts.json")
 	if err != nil {
 		log.Fatal(err)
 	}
