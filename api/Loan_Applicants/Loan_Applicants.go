@@ -45,9 +45,9 @@ func SetupDatabase() {
 	}
 	defer db.Close()
 
-	// Create the loan_submits table if it doesn't exist
+	// Create the loan_applicants table if it doesn't exist
 	if err := createLoanApplicantTable(db); err != nil {
-		log.Fatal("Error creating loan_submits table:", err)
+		log.Fatal("Error creating loan_applicants table:", err)
 	}
 
 	// Read data from JSON file
