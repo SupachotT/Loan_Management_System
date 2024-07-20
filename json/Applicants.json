@@ -1,0 +1,42 @@
+[
+    {
+        "first_name": "Alice",
+        "last_name": "Johnson",
+        "address": "789 Maple St",
+        "phone": "555-0001",
+        "email": "alice.johnson@example.com",
+        "applicant_status": "newBorrower"
+    },
+    {
+        "first_name": "Bob",
+        "last_name": "Williams",
+        "address": "101 Elm St",
+        "phone": "555-0002",
+        "email": "bob.williams@example.com",
+        "applicant_status": "currentBorrower"
+    },
+    {
+        "first_name": "Charlie",
+        "last_name": "Brown",
+        "address": "202 Pine St",
+        "phone": "555-0003",
+        "email": "charlie.brown@example.com",
+        "applicant_status": "newBorrower"
+    },
+    {
+        "first_name": "Daisy",
+        "last_name": "Miller",
+        "address": "303 Birch St",
+        "phone": "555-0004",
+        "email": "daisy.miller@example.com",
+        "applicant_status": "currentBorrower"
+    },
+    {
+        "first_name": "Ethan",
+        "last_name": "Davis",
+        "address": "404 Cedar St",
+        "phone": "555-0005",
+        "email": "ethan.davis@example.com",
+        "applicant_status": "newBorrower"
+    }
+]
